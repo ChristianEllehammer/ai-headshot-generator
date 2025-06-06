@@ -1,4 +1,45 @@
 
+import { db } from '../db';
+import { headshotRequestsTable, usersTable } from '../db/schema';
 import { type GetHeadshotByIdInput, type HeadshotWithUser } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export declare function getHeadshotById(input: GetHeadshotByIdInput): Promise<HeadshotWithUser | null>;
+export const getHeadshotById = async (input: GetHeadshotByIdInput): Promise<HeadshotWithUser | null> => {
+  try {
+    const results = await db.select()
+      .from(headshotRequestsTable)
+      .innerJoin(usersTable, eq(headshotRequestsTable.user_id, usersTable.id))
+      .where(eq(headshotRequestsTable.id, input.id))
+      .execute();
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const result = results[0];
+    
+    return {
+      id: result.headshot_requests.id,
+      user_id: result.headshot_requests.user_id,
+      original_image_url: result.headshot_requests.original_image_url,
+      background_style: result.headshot_requests.background_style,
+      attire: result.headshot_requests.attire,
+      expression: result.headshot_requests.expression,
+      status: result.headshot_requests.status,
+      generated_image_url: result.headshot_requests.generated_image_url,
+      error_message: result.headshot_requests.error_message,
+      created_at: result.headshot_requests.created_at,
+      updated_at: result.headshot_requests.updated_at,
+      user: {
+        id: result.users.id,
+        email: result.users.email,
+        name: result.users.name,
+        created_at: result.users.created_at,
+        updated_at: result.users.updated_at
+      }
+    };
+  } catch (error) {
+    console.error('Get headshot by ID failed:', error);
+    throw error;
+  }
+};
